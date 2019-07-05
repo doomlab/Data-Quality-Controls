@@ -1,0 +1,56 @@
+---
+title: 'Statistics are useless without suitable data: How to implement and assess for data quality'
+author: "Erin M. Buchanan"
+date: "7/9/2019"
+output: slidy_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r import_data, include = F}
+master <- read.csv("SIPS_DQ_data.csv", stringsAsFactors = F)
+
+##reverse coded items
+master[ , c("infrequent1", "infrequent4", "infrequent5")] <- 6 - master[ , c("infrequent1", "infrequent4", "infrequent5")]
+master$mlq9 <- 8 - master$mlq9
+
+##scoring
+master$flexibility <- apply(master[ , 28:39], 1, sum)
+master$inflexibility <- apply(master[, 45:56], 1, sum)
+master$resiliency <- apply(master[ , 62:75], 1, sum)
+master$purpose <- apply(master[ , c(81, 84, 85, 86, 89)], 1, sum)
+master$search <- apply(master[ , c(82, 83, 87, 88, 90)], 1, sum)
+
+##clear out unfinished
+master <- subset(master, Finished == 1)
+```
+
+## DQ STUFF
+
+## Where to put DQ checks? 
+
+## Real Example!
+
+- Question: What is the relationship between meaning, resiliency, and psychological flexibility?
+- Hypothesis: These should be highly correlated.
+
+## Materials
+
+- Resiliency Scale 14 Items (Wagnild, 2009)
+- Meaning in Life Scale (Steger et al., 2006)
+- Multidimensional Psychological Flexibility Inventory (Rolffs et al., 2018)
+
+## Correlation stuff 
+
+
+
+
+## Check type
+
+## How to Implement
+
+## How to Score
+
+## What Happened? 
