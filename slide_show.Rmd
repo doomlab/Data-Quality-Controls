@@ -13,6 +13,7 @@ library(papaja)
 library(knitr)
 library(kableExtra)
 library(dplyr)
+library(careless)
 ```
 
 ```{r import_data, include = F}
@@ -411,9 +412,102 @@ kable(as.data.frame(tableprint_ser)) %>%
 
 ## Speeding
 
+- "Rushing" through the study
+- There are a LOT of thoughts on speeding cut-offs:
+  - 1-2 seconds per item
+  - 300 ms per word
+  - 600 words per minute (~100 ms per word)
+  - Character counts
+
+## How to Implement
+
+- Qualtrics: you can easily add a page timing question to get each page's time
+- Others experiences?
+- You can use the whole survey submission time as well
+- Decision:
+  - Do I screen each page?
+  - Do I screen the whole thing? 
+  - What do I do with very long response times?
+
+## How to Score
+
+- Determine cut-off and see how many people are below it
+
+```{r}
+
+```
+
+## Effect on Statistical Test
+
+```{r}
+
+```
+
 ## Meta-Data Checks
 
-## Response Patterns
+- IP Duplications
+- Bad IPs 
+- Page clicks
+
+```{r}
+ip_table <- as.data.frame(table(master$IP))
+
+prop.table(table(ip_table$Freq > 1)) * 100 
+```
+
+
+
+## Response Patterns - Straightlining
+
+- Straightlining is the longest number of consecutive responses for each participant
+
+```{r}
+master$long_pattern <- longstring(master[ , c(28:39, 45:55, 62:75, 81:90)])
+
+hist(master$long_pattern)
+```
+
+- Even odd consistency
+
+```{r}
+master$even_odd <- evenodd(master[ , c(28:39, 45:55, 62:75, 81:90)], 
+                           c(length(28:39), length(45:55), length(62:75), length(81:90)))
+
+hist(master$even_odd)
+```
+
+- Inter-item response variability and distribution/scale usage
+
+```{r}
+master$item_response <- irv(master[ , c(28:39, 45:55, 62:75, 81:90)])
+
+hist(master$item_response)
+```
+
+- Person total correlation
+
+```{r}
+#create average score for each item
+
+#calculate correlation versus average score 
+```
+
+- Mahalanobis distance
+
+```{r}
+##fix this up
+md <- mahalanobis(data, center = colMeans(data_outlier), cov = cov(data_outlier))
+
+alpha <- .001
+
+cutoff <- (qchisq(p = 1 - alpha, df = ncol(data_outlier)))
+
+table(master$flagged)
+```
+
+More advanced options:
+- Guttman errors
+- Gendre's functional method
 
 ## Want to learn more?
 
