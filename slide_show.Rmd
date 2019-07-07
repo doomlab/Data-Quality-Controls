@@ -1,19 +1,27 @@
 ---
 title: 'Statistics are useless without suitable data: How to implement and assess for data quality'
-author: "Erin M. Buchanan"
+author: "Erin M. Buchanan & Flavio Azevedo"
 date: "7/9/2019"
-output: slidy_presentation
+output: 
+  slidy_presentation:
+    incremental: true
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
+library(papaja)
+library(knitr)
+library(kableExtra)
+library(dplyr)
 ```
 
 ```{r import_data, include = F}
 master <- read.csv("SIPS_DQ_data.csv", stringsAsFactors = F)
 
 ##reverse coded items
-master[ , c("infrequent1", "infrequent4", "infrequent5")] <- 6 - master[ , c("infrequent1", "infrequent4", "infrequent5")]
+master[ , c("infrequent1", "infrequent4", "infrequent5")] <- 5 - master[ , c("infrequent1", "infrequent4", "infrequent5")]
+master[ , c("infrequent2", "infrequent3", "infrequent6")] <- master[ , c("infrequent2", "infrequent3", "infrequent6")] - 1
+
 master$mlq9 <- 8 - master$mlq9
 
 ##scoring
@@ -27,30 +35,388 @@ master$search <- apply(master[ , c(82, 83, 87, 88, 90)], 1, sum)
 master <- subset(master, Finished == 1)
 ```
 
-## DQ STUFF
+## Materials
+
+- OSF: https://osf.io/x53kn/
+- GitHub: https://github.com/doomlab/Data-Quality-Controls
+- Mendeley: 
+- RStudio: 
+
+
+## Overview
+
+- Definitions: quality data
+- Example dataset
+- Checks and controls
+   - How to implement
+   - How to analyze
+- What difference does it make?
+
+## What is quality data?
+
+- Might be better to ask: what is bad data?
+- Some ideas:
+  - Data not from the population you intended (sampling)
+  - Data from the population you intended but extreme (true outliers)
+  - Social desirability responding
+  - Misunderstanding of the instructions
+  - Low effort data provided by participants
+  - Automated or otherwise "fake" data
+
+## What is quality data?
+
+- Data that is: 
+  - Provided by a real participant
+  - Complies with instructions 
+  - Good faith effort by participants
+- Any other thoughts?
+- *Note*: all these are regardless of your hypotheses!
+
+## What is quality data?
+
+- A strong definition of what you think data quality is in the context of your study will help you determine how to control for quality.
+- Pre-planned checks are good! Pre-registered plans are great!
+- Post hoc checking is also cool, but be careful of peaking and using it to *p*-hack 
+
+## Quality participants?
+
+- Sorry guys, you provide bad data 
+- Younger participants (less) versus older participants (more)
+- Financial/hourly workers (less) versus professionals (more)
+- Students? - related to GPA
+- Non-US participants (less)
+- Related to some personality measures
+
+## Why should we care about DQ? 
+
+- Added noise to a study can: 
+  - Decrease power
+  - Decrease reliability
+  - Change the summary and test statistics
+  - Decrease reproducibility*
+
+## What we are going to do
+
+- Prevention versus Treatment 
+  - [Open Sampling Workshop](https://docs.google.com/document/d/1Y0TY49qGmzWXyHP81pKS5bR_QGVET2N0HqC4Dw6pQsU/edit)
+  - What can we do to help participants want to take our studies correctly? (prevention)
+  - What can we do to clean up the mess afterwards? (treatment)
+  - Focus on treatment with a bit of prevention
+- Focus on individual measures of DQ assessment - rather than global study measures like Cronbach's $\alpha$
+- Explore visible (obtrusive) versus invisible DQ measures 
 
 ## Where to put DQ checks? 
+
+- Data screening is important!
+- More than just assumptions of linearity, normality, etc.
+- Accuracy --> missing data --> DQ / outliers --> assumptions
 
 ## Real Example!
 
 - Question: What is the relationship between meaning, resiliency, and psychological flexibility?
-- Hypothesis: These should be highly correlated.
+- Hypothesis: These should be highly correlated (some positive, some negative).  
+
+## Participants
+
+- Sample: `r nrow(master)` MTurk Participants 
+  - 60% HIT rate
+  - At least 100 HITs
+  - Run on TurkPrime
+- Survey took approximately ~10 minutes (`r round(mean(master$duration_seconds[master$duration_seconds<2000])/60, 2)`)
+  - $7.25 * 10/60 = 1.21
+  - HITS were paid at $1.25
+  - Prevention!
+
+## Participants
+
+```{r turk_sample, echo=FALSE, fig.cap="Turk Prime Sample", out.width = '100%'}
+knitr::include_graphics("turk_sample.png")
+```
 
 ## Materials
 
-- Resiliency Scale 14 Items (Wagnild, 2009)
-- Meaning in Life Scale (Steger et al., 2006)
-- Multidimensional Psychological Flexibility Inventory (Rolffs et al., 2018)
+- Resiliency Scale 14 Items
+- Meaning in Life Questionnaire 
+- Multidimensional Psychological Flexibility Inventory
+- Attentive Responding Scale (obtrusive measure)
 
-## Correlation stuff 
+## Procedure
 
+- Qualtrics survey randomly assigned to conditions 
+  - FULL group: all surveys and visible attention checks 
+  - PARTIAL group: all surveys, no visible checks
+  - *n*s = `r table(master$surveygroup)`
+- Survey order:
+  - Consent, demographics, ARS part 1
+  - Random order of MLQ, RS14, MPFI (two pages)
+  - ARS part 2
+  - Ask if serious question
+  - Thanks!
+- Randomization is important because DQ is poorer at the end of a study (prevention)
 
+## Hypothesis Test
 
+- Focus on flexibility + resiliency (high), resiliency + search (low)
 
-## Check type
+```{r correl1, results = 'asis'}
+test1var = c("flexibility", "resiliency")
+test2var = c("resiliency", "search")
+
+test1 = cor.test(master[ , test1var[1]], master[ , test1var[2]])
+test2 = cor.test(master[ , test2var[1]], master[ , test2var[2]])
+
+test1a = cor.test(master[ master$surveygroup == "FULL" , 
+                          test1var[1]], master[ master$surveygroup == "FULL" , test1var[2]])
+test2a = cor.test(master[ master$surveygroup == "FULL" , 
+                          test2var[1]], master[ master$surveygroup == "FULL" , test2var[2]])
+
+test1b = cor.test(master[ master$surveygroup == "PARTIAL" , 
+                          test1var[1]], master[ master$surveygroup == "PARTIAL" , test1var[2]])
+test2b = cor.test(master[ master$surveygroup == "PARTIAL" , 
+                          test2var[1]], master[ master$surveygroup == "PARTIAL" , test2var[2]])
+
+tableprint =  matrix(NA, nrow = 2, ncol = 4)
+tableprint = as.data.frame(tableprint)
+colnames(tableprint) = c("Correlation", "Overall", "Full", "Partial")
+
+tableprint[1 , ] = c("F-R",
+  apa_print(test1)$estimate, 
+  apa_print(test1a)$estimate,
+  apa_print(test1b)$estimate)
+
+tableprint[2 , ] = c("R-S",
+  apa_print(test2)$estimate,
+  apa_print(test2a)$estimate,
+  apa_print(test2b)$estimate)
+
+kable(tableprint) %>% 
+  kable_styling(bootstrap_options = "striped")
+```
+
+## Let's get to checking!
+
+- Visible
+  - Attention checks, check questions, manipulation questions
+  - Inattention measures
+  - Self-report attention
+  - Captcha * 
+
+- Invisible
+  - Speeding
+  - Meta-data checks
+  - Response patterns
+
+## Attention Checks
+
+- Items that somehow inform if the participant is paying attention 
+- Can be coded as "correct/incorrect" 
+- Many forms:
+  - Please mark strongly agree
+  - Manipulation check for the study instructions
+  - Asking the same demographic questions twice (beginning/end)
+  
+## Attention Checks
+
+```{r attention_pic, echo=FALSE, fig.cap="Attention Check Idea", out.width = '100%'}
+knitr::include_graphics("attention_checks.png")
+```
 
 ## How to Implement
 
+- You can randomly embed these items on pages with other questions or simply put them as their own page. 
+- In this study, I put one on each page for the real surveys (four total).
+- Questions:
+  - `flex_answer4` = "I was able to move on by selecting Often TRUE to this statement"
+  - `inflex_answer2` = "I mindlessly will choose the answer Rarely TRUE to this question"
+  - `rs_answer6` = "I believe in myself that I selected Agree to this question."
+  - `mlq_answer6` = "My life's meaning is centered around choosing mostly true for this question."
+
 ## How to Score
 
-## What Happened? 
+- Global Suggestions:
+  - Keep a summary column of each check, so you can exclude folks based on the overall "attentiveness" rather than one individual check 
+  - More than one check should be used to determine who you might exclude
+  - Figure out how many checks you will have and determine a percent or proportion "cut off" to use
+
+## How to Score
+
+```{r scoring, echo = T}
+master$attention_total <- as.numeric(master$flex_answer4 != 4) +
+  as.numeric(master$inflex_answer2 != 2) + as.numeric(master$rs_answer6 != 6) + 
+  as.numeric(master$mlq_answer6 != 6)
+
+prop.table(table(master$attention_total))  * 100
+```
+
+## Effect on Statistical Test 
+
+```{r correl2, results = 'asis'}
+
+test1c = cor.test(master[ master$surveygroup == "FULL" & master$attention_total < 4 , 
+                          test1var[1]], master[ master$surveygroup == "FULL" & master$attention_total < 4 , test1var[2]])
+test2c = cor.test(master[ master$surveygroup == "FULL" & master$attention_total < 4 , 
+                          test2var[1]], master[ master$surveygroup == "FULL" & master$attention_total < 4 , test2var[2]])
+
+test1d = cor.test(master[ master$surveygroup == "FULL" & master$attention_total < 3 , 
+                          test1var[1]], master[ master$surveygroup == "FULL" & master$attention_total < 3 , test1var[2]])
+test2d = cor.test(master[ master$surveygroup == "FULL" & master$attention_total < 3 , 
+                          test2var[1]], master[ master$surveygroup == "FULL" & master$attention_total < 3 , test2var[2]])
+
+test1e = cor.test(master[ master$surveygroup == "FULL" & master$attention_total < 2 , 
+                          test1var[1]], master[ master$surveygroup == "FULL" & master$attention_total < 2 , test1var[2]])
+test2e = cor.test(master[ master$surveygroup == "FULL" & master$attention_total < 2 , 
+                          test2var[1]], master[ master$surveygroup == "FULL" & master$attention_total < 2 , test2var[2]])
+
+test1f = cor.test(master[ master$surveygroup == "FULL" & master$attention_total < 1 , 
+                          test1var[1]], master[ master$surveygroup == "FULL" & master$attention_total < 1 , test1var[2]])
+test2f = cor.test(master[ master$surveygroup == "FULL" & master$attention_total < 1 , 
+                          test2var[1]], master[ master$surveygroup == "FULL" & master$attention_total < 1 , test2var[2]])
+
+tableprint_ac = matrix(NA, nrow = 5, ncol = 3)
+colnames(tableprint_ac) = c("Attn Check Cut-Off", "F-R", "R-S")
+tableprint_ac[1, ] = c("Original", apa_print(test1a)$estimate, apa_print(test2a)$estimate)
+tableprint_ac[2, ] = c("< 4 Incorrect", apa_print(test1c)$estimate, apa_print(test2c)$estimate)
+tableprint_ac[3, ] = c("< 3 Incorrect", apa_print(test1d)$estimate, apa_print(test2d)$estimate)
+tableprint_ac[4, ] = c("< 2 Incorrect", apa_print(test1e)$estimate, apa_print(test2e)$estimate)
+tableprint_ac[5, ] = c("All Correct", apa_print(test1f)$estimate, apa_print(test2f)$estimate)
+
+kable(as.data.frame(tableprint_ac)) %>% 
+  kable_styling(bootstrap_options = "striped")
+```
+
+## Inattention Measures
+
+- Ad hoc scales that you can use to measure "inattention" 
+- Work similarly to attention checks, but less obvious what the cut off score is
+- Implement simply as a scale in your study
+
+## Inattention Measures
+
+```{r inattention, echo=FALSE, out.width = '100%'}
+knitr::include_graphics("inconsistency.png")
+knitr::include_graphics("infrequent.png")
+```
+
+## How to Score
+
+- Total the absolute difference between pairs of items for the inconsistency scale 
+- Suggested cut-off: 6.5
+
+```{r scoring_IM, echo = T}
+master$inconsistent_total <- abs(master$inconsistent1.1 - master$inconsistent1.2) + 
+  abs(master$inconsistent2.1 - master$inconsistent2.2) + 
+  abs(master$inconsistent3.1 - master$inconsistent3.2) + 
+  abs(master$inconsistent4.1 - master$inconsistent4.2) + 
+  abs(master$inconsistent5.1 - master$inconsistent5.2) + 
+  abs(master$inconsistent6.1 - master$inconsistent6.2) 
+
+prop.table(table(master$inconsistent_total <= 6.5)) * 100
+
+hist(master$inconsistent_total)
+```
+
+## How to Score
+
+- Sum the infrequency items (note: some are reversed)
+- Suggested cut-off: 7.5
+
+```{r scoring_IM2, echo = T}
+master$infrequent_total <- master$infrequent1 + master$infrequent2 + master$infrequent3 + 
+  master$infrequent4 + master$infrequent5 + master$infrequent6
+
+prop.table(table(master$infrequent_total <= 7.5)) * 100
+
+hist(master$infrequent_total)
+```
+
+## Effect on Statistical Test
+
+```{r correl3, results = 'asis'}
+
+test1g = cor.test(master[ master$surveygroup == "FULL" & master$inconsistent_total <= 6.5 , 
+                          test1var[1]], master[ master$surveygroup == "FULL" & master$inconsistent_total <= 6.5 , test1var[2]])
+test2g = cor.test(master[ master$surveygroup == "FULL" & master$inconsistent_total <= 6.5 , 
+                          test2var[1]], master[ master$surveygroup == "FULL" & master$inconsistent_total <= 6.5 , test2var[2]])
+
+test1h = cor.test(master[ master$surveygroup == "FULL" & master$infrequent_total <= 7.5 , 
+                          test1var[1]], master[ master$surveygroup == "FULL" & master$infrequent_total <= 7.5 , test1var[2]])
+test2h = cor.test(master[ master$surveygroup == "FULL" & master$infrequent_total <= 7.5 , 
+                          test2var[1]], master[ master$surveygroup == "FULL" & master$infrequent_total <= 7.5 , test2var[2]])
+
+test1i = cor.test(master[ master$surveygroup == "FULL" & master$infrequent_total <= 7.5 & master$inconsistent_total <= 6.5, 
+                          test1var[1]], master[ master$surveygroup == "FULL" & master$infrequent_total <= 7.5 & master$inconsistent_total <= 6.5, test1var[2]])
+test2i = cor.test(master[ master$surveygroup == "FULL" & master$infrequent_total <= 7.5 & master$inconsistent_total <= 6.5, 
+                          test2var[1]], master[ master$surveygroup == "FULL" & master$infrequent_total <= 7.5 & master$inconsistent_total <= 6.5, test2var[2]])
+
+tableprint_im = matrix(NA, nrow = 4, ncol = 3)
+colnames(tableprint_im) = c("Measure", "F-R", "R-S")
+tableprint_im[1, ] = c("Original", apa_print(test1a)$estimate, apa_print(test2a)$estimate)
+tableprint_im[2, ] = c("Below Inconsistent Total", apa_print(test1g)$estimate, apa_print(test2g)$estimate)
+tableprint_im[3, ] = c("Below Infrequent Total", apa_print(test1h)$estimate, apa_print(test2h)$estimate)
+tableprint_im[4, ] = c("Below Both", apa_print(test1i)$estimate, apa_print(test2i)$estimate)
+
+kable(as.data.frame(tableprint_im)) %>% 
+  kable_styling(bootstrap_options = "striped")
+```
+
+## Self-report Attention
+
+- Simply ask the participants to report their attention
+
+```{r attention_pic2, echo=FALSE, fig.cap="Self-Report Attention", out.width = '100%'}
+knitr::include_graphics("self_attention.png")
+```
+
+## How to Score
+
+- Simply use their answer!
+
+```{r self_attention, echo = T}
+prop.table(table(master$seriouscheck, master$surveygroup))*100
+```
+
+## Effect on Statistical Test 
+
+```{r correl4, results = 'asis'}
+
+test1j = cor.test(master[ master$surveygroup == "FULL" & master$seriouscheck == 
+                            "Seriously" , test1var[1]], 
+                  master[ master$surveygroup == "FULL" & master$seriouscheck == 
+                            "Seriously" , test1var[2]])
+test2j = cor.test(master[ master$surveygroup == "FULL" & master$seriouscheck == 
+                            "Seriously" , test2var[1]], 
+                  master[ master$surveygroup == "FULL" & master$seriouscheck == 
+                            "Seriously" , test2var[2]])
+
+test1k = cor.test(master[ master$surveygroup == "PARTIAL" & master$seriouscheck == 
+                            "Seriously" , test1var[1]], 
+                  master[ master$surveygroup == "PARTIAL" & master$seriouscheck == 
+                            "Seriously" , test1var[2]])
+test2k = cor.test(master[ master$surveygroup == "PARTIAL" & master$seriouscheck == 
+                            "Seriously" , test2var[1]], 
+                  master[ master$surveygroup == "PARTIAL" & master$seriouscheck == 
+                            "Seriously" , test2var[2]])
+
+
+tableprint_ser = matrix(NA, nrow = 4, ncol = 3)
+colnames(tableprint_ser) = c("Measure", "F-R", "R-S")
+tableprint_ser[1, ] = c("Original Full", apa_print(test1a)$estimate, apa_print(test2a)$estimate)
+tableprint_ser[2, ] = c("Full Survey", apa_print(test1j)$estimate, apa_print(test2j)$estimate)
+tableprint_ser[3, ] = c("Original Partial", apa_print(test1b)$estimate, apa_print(test2b)$estimate)
+tableprint_ser[4, ] = c("Partial Survey", apa_print(test1k)$estimate, apa_print(test2k)$estimate)
+
+kable(as.data.frame(tableprint_ser)) %>% 
+  kable_styling(bootstrap_options = "striped")
+```
+
+## Speeding
+
+## Meta-Data Checks
+
+## Response Patterns
+
+## Want to learn more?
+
+- Twitter is the best!
+- Read reddit ... seriously
+- Working group?
