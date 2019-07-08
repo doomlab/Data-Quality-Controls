@@ -43,6 +43,9 @@ master <- subset(master, Finished == 1)
 - Mendeley: 
 - RStudio: 
 
+- Follow us:
+  - erin: @aggieerin, Statistics of Doom YouTube
+  - Flavio: @Flavio_Azevedo_
 
 ## Overview
 
@@ -559,21 +562,91 @@ hist(master$Q9_Click.Count, breaks = 100)
 
 ## How to Score 
 
-```{r clicks, include = F}
-prop.table(table(master$Q9_Click.Count >= items)) * 100
+- Calculate the number of items answered and ensure that the number of clicks is equal or higher
+
+```{r clicks, echo = T}
+master$total_page <- apply(master[ , c(28:39, 45:55, 62:75, 81:90)], 
+                           1, function(x){sum(!is.na(x))})
+master$click <- (master$Q7_Click.Count + master$Q8_Click.Count +
+                   master$Q9_Click.Count + master$Q12_Click.Count) >= master$total_page
+
+prop.table(table(master$click)) * 100
+```
+
+## Effect on Statistical Test
+
+```{r click_table, results = 'asis'}
+
+test1r = cor.test(master[ master$surveygroup == "FULL" & master$click == "TRUE", test1var[1]], 
+                  master[ master$surveygroup == "FULL" & master$click == "TRUE", test1var[2]])
+test2r = cor.test(master[ master$surveygroup == "FULL" & master$click == "TRUE", test2var[1]], 
+                  master[ master$surveygroup == "FULL" & master$click == "TRUE", test2var[2]])
+
+test1s = cor.test(master[ master$surveygroup == "PARTIAL" & master$click == "TRUE", test1var[1]], 
+                  master[ master$surveygroup == "PARTIAL" & master$click == "TRUE", test1var[2]])
+test2s = cor.test(master[ master$surveygroup == "PARTIAL" & master$click == "TRUE", test2var[1]], 
+                  master[ master$surveygroup == "PARTIAL" & master$click == "TRUE", test2var[2]])
+
+tableprint_click = matrix(NA, nrow = 4, ncol = 3)
+colnames(tableprint_click) = c("Measure", "F-R", "R-S")
+tableprint_click[1, ] = c("Original Full", apa_print(test1a)$estimate, apa_print(test2a)$estimate)
+tableprint_click[2, ] = c("Full Click", apa_print(test1r)$estimate, apa_print(test2r)$estimate)
+tableprint_click[3, ] = c("Original Partial", apa_print(test1b)$estimate, apa_print(test2b)$estimate)
+tableprint_click[4, ] = c("Partial Click", apa_print(test1s)$estimate, apa_print(test2s)$estimate)
+
+kable(as.data.frame(tableprint_click)) %>% 
+  kable_styling(bootstrap_options = "striped")
 ```
 
 ## Response Patterns - Straightlining
 
 - Straightlining is the longest number of consecutive responses for each participant
 
-```{r}
+```{r straight, echo = T}
 master$long_pattern <- longstring(master[ , c(28:39, 45:55, 62:75, 81:90)])
 
 hist(master$long_pattern)
 ```
 
-- Even odd consistency
+## How to Score
+
+- Not clear what the cut off should be?
+
+```{r straight2, echo = T}
+master$straight <- master$long_pattern <= (mean(master$long_pattern) + 2*sd(master$long_pattern))
+
+table(master$straight)
+```
+
+## Effect on Statistical Test
+
+```{r straight_table, results = 'asis'}
+
+test1r = cor.test(master[ master$surveygroup == "FULL" & master$click == "TRUE", test1var[1]], 
+                  master[ master$surveygroup == "FULL" & master$click == "TRUE", test1var[2]])
+test2r = cor.test(master[ master$surveygroup == "FULL" & master$click == "TRUE", test2var[1]], 
+                  master[ master$surveygroup == "FULL" & master$click == "TRUE", test2var[2]])
+
+test1s = cor.test(master[ master$surveygroup == "PARTIAL" & master$click == "TRUE", test1var[1]], 
+                  master[ master$surveygroup == "PARTIAL" & master$click == "TRUE", test1var[2]])
+test2s = cor.test(master[ master$surveygroup == "PARTIAL" & master$click == "TRUE", test2var[1]], 
+                  master[ master$surveygroup == "PARTIAL" & master$click == "TRUE", test2var[2]])
+
+tableprint_click = matrix(NA, nrow = 4, ncol = 3)
+colnames(tableprint_click) = c("Measure", "F-R", "R-S")
+tableprint_click[1, ] = c("Original Full", apa_print(test1a)$estimate, apa_print(test2a)$estimate)
+tableprint_click[2, ] = c("Full Click", apa_print(test1r)$estimate, apa_print(test2r)$estimate)
+tableprint_click[3, ] = c("Original Partial", apa_print(test1b)$estimate, apa_print(test2b)$estimate)
+tableprint_click[4, ] = c("Partial Click", apa_print(test1s)$estimate, apa_print(test2s)$estimate)
+
+kable(as.data.frame(tableprint_click)) %>% 
+  kable_styling(bootstrap_options = "striped")
+```
+
+
+## Response Patterns - Even Odd Consistency
+
+- Even odd consistency: the correlation between even and odd average items on your scales
 
 ```{r}
 master$even_odd <- evenodd(master[ , c(28:39, 45:55, 62:75, 81:90)], 
@@ -582,6 +655,8 @@ master$even_odd <- evenodd(master[ , c(28:39, 45:55, 62:75, 81:90)],
 hist(master$even_odd)
 ```
 
+## Response Patterns - Inter-Item Response Variability
+
 - Inter-item response variability and distribution/scale usage
 
 ```{r}
@@ -589,6 +664,8 @@ master$item_response <- irv(master[ , c(28:39, 45:55, 62:75, 81:90)])
 
 hist(master$item_response)
 ```
+
+## Response Patterns - Person Total Correlation
 
 - Person total correlation
 
@@ -602,6 +679,8 @@ master$correl_items <- apply(master[ , c(28:39, 45:55, 62:75, 81:90)], 1, functi
 hist(master$correl_items)
 ```
 
+## Response Patterns - Mahalanobis Distance
+
 - Mahalanobis distance
 
 ```{r}
@@ -614,9 +693,16 @@ cutoff <- (qchisq(p = 1 - alpha, df = ncol(master[ , c(28:39, 45:55, 62:75, 81:9
 prop.table(table(master$mahal < cutoff)) * 100
 ```
 
-More advanced options:
-- Guttman errors
-- Gendre's functional method
+## Response Patteerns - Other Options
+
+- More advanced options:
+  - Guttman errors
+  - Gendre's functional method
+
+## Final Thoughts
+
+- No one rule is useful, should combine rules
+- Suggestion is to take the overall percent marked as "bad", use a cut-off based on an overall global representation of "low effort" 
 
 ## Want to learn more?
 
