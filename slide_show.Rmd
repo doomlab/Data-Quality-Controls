@@ -176,19 +176,13 @@ test1b = cor.test(master[ master$surveygroup == "PARTIAL" ,
 test2b = cor.test(master[ master$surveygroup == "PARTIAL" , 
                           test2var[1]], master[ master$surveygroup == "PARTIAL" , test2var[2]])
 
-tableprint =  matrix(NA, nrow = 2, ncol = 4)
+tableprint =  matrix(NA, nrow = 4, ncol = 3)
 tableprint = as.data.frame(tableprint)
-colnames(tableprint) = c("Correlation", "Overall", "Full", "Partial")
+colnames(tableprint) = c("Group", "F-R", "R-S")
 
-tableprint[1 , ] = c("F-R",
-  apa_print(test1)$estimate, 
-  apa_print(test1a)$estimate,
-  apa_print(test1b)$estimate)
-
-tableprint[2 , ] = c("R-S",
-  apa_print(test2)$estimate,
-  apa_print(test2a)$estimate,
-  apa_print(test2b)$estimate)
+tableprint[1, ] = c("Overall", apa_print(test1)$estimate, apa_print(test2)$estimate)
+tableprint[2, ] = c("Full", apa_print(test1a)$estimate, apa_print(test2a)$estimate)
+tableprint[3, ] = c("Partial", apa_print(test1b)$estimate, apa_print(test2b)$estimate)
 
 kable(tableprint) %>% 
   kable_styling(bootstrap_options = "striped")
@@ -446,9 +440,12 @@ words <- 1946
 short_words <- (words * 100) / 1000 #convert to seconds
 long_words <- words * 300 / 1000
 
-prop.table(table(master$duration_seconds >= short_words)) * 100
+master$short_words <- master$duration_seconds >= short_words
+master$long_words <- master$duration_seconds >= long_words
 
-prop.table(table(master$duration_seconds >= long_words)) * 100
+prop.table(table(master$short_words)) * 100
+
+prop.table(table(master$long_words)) * 100
 ```
 
 ## How to Score
@@ -458,7 +455,9 @@ prop.table(table(master$duration_seconds >= long_words)) * 100
 ```{r page_duration, echo = T}
 items <- 14
 
-prop.table(table(master$Q9_Page.Submit >= items)) * 100
+master$RSpage_items <- master$Q9_Page.Submit >= items
+
+prop.table(table(master$RSpage_items)) * 100
 
 characters <- 1137
 meanchar <- 987
@@ -466,30 +465,99 @@ sdchar <- 118
 upperchar <- meanchar + 2*sdchar
 cutoffChar <- characters / upperchar * 60
 
-prop.table(table(master$Q9_Page.Submit >= cutoffChar)) * 100
+master$RSpage_char <- master$Q9_Page.Submit >= cutoffChar
+
+prop.table(table(master$RSpage_char)) * 100
 ```
 
 ## Effect on Statistical Test
 
-```{r }
+```{r speeding, results = 'asis'}
 
+test1l = cor.test(master[ master$surveygroup == "FULL" & master$short_words == "TRUE", test1var[1]], 
+                  master[ master$surveygroup == "FULL" & master$short_words == "TRUE", test1var[2]])
+test2l = cor.test(master[ master$surveygroup == "FULL" & master$short_words == "TRUE", test2var[1]], 
+                  master[ master$surveygroup == "FULL" & master$short_words == "TRUE", test2var[2]])
+
+test1m = cor.test(master[ master$surveygroup == "FULL" & master$RSpage_items == "TRUE", test1var[1]], 
+                  master[ master$surveygroup == "FULL" & master$RSpage_items == "TRUE", test1var[2]])
+test2m = cor.test(master[ master$surveygroup == "FULL" & master$RSpage_items == "TRUE", test2var[1]], 
+                  master[ master$surveygroup == "FULL" & master$RSpage_items == "TRUE", test2var[2]])
+
+test1n = cor.test(master[ master$surveygroup == "PARTIAL" & master$short_words == "TRUE", test1var[1]], 
+                  master[ master$surveygroup == "PARTIAL" & master$short_words == "TRUE", test1var[2]])
+test2n = cor.test(master[ master$surveygroup == "PARTIAL" & master$short_words == "TRUE", test2var[1]], 
+                  master[ master$surveygroup == "PARTIAL" & master$short_words == "TRUE", test2var[2]])
+
+test1o = cor.test(master[ master$surveygroup == "PARTIAL" & master$RSpage_items == "TRUE", test1var[1]], 
+                  master[ master$surveygroup == "PARTIAL" & master$RSpage_items == "TRUE", test1var[2]])
+test2o = cor.test(master[ master$surveygroup == "PARTIAL" & master$RSpage_items == "TRUE", test2var[1]], 
+                  master[ master$surveygroup == "PARTIAL" & master$RSpage_items == "TRUE", test2var[2]])
+
+
+tableprint_time = matrix(NA, nrow = 6, ncol = 3)
+colnames(tableprint_time) = c("Measure", "F-R", "R-S")
+tableprint_time[1, ] = c("Original Full", apa_print(test1a)$estimate, apa_print(test2a)$estimate)
+tableprint_time[2, ] = c("Full 100ms word", apa_print(test1l)$estimate, apa_print(test2l)$estimate)
+tableprint_time[3, ] = c("Full 1s item", apa_print(test1m)$estimate, apa_print(test2m)$estimate)
+tableprint_time[4, ] = c("Original Partial", apa_print(test1b)$estimate, apa_print(test2b)$estimate)
+tableprint_time[5, ] = c("Partial 100ms word", apa_print(test1n)$estimate, apa_print(test2n)$estimate)
+tableprint_time[6, ] = c("Partial 1s item", apa_print(test1o)$estimate, apa_print(test2o)$estimate)
+
+kable(as.data.frame(tableprint_time)) %>% 
+  kable_styling(bootstrap_options = "striped")
 ```
 
-## Meta-Data Checks
+## Meta-Data Checks - IPs
 
 - IP Duplications
-- Bad IPs 
-- Page clicks
+- Bad IPs - package `rIP` or use https://ipinfo.info/html/ip_checker.php
 
-```{r ip_dups, include = F}
+```{r ip_dups, echo = T}
 ip_table <- as.data.frame(table(master$IP))
 
-prop.table(table(ip_table$Freq == 1)) * 100 
+master$IP_check <- master$IP %in% ip_table$Var1[ip_table$Freq == 1]
+
+prop.table(table(master$IP_check)) * 100 
 ```
+
+## Effect on Statistical Test
+
+```{r ip_table, results = 'asis'}
+
+test1p = cor.test(master[ master$surveygroup == "FULL" & master$IP_check == "TRUE", test1var[1]], 
+                  master[ master$surveygroup == "FULL" & master$IP_check == "TRUE", test1var[2]])
+test2p = cor.test(master[ master$surveygroup == "FULL" & master$IP_check == "TRUE", test2var[1]], 
+                  master[ master$surveygroup == "FULL" & master$IP_check == "TRUE", test2var[2]])
+
+test1q = cor.test(master[ master$surveygroup == "PARTIAL" & master$IP_check == "TRUE", test1var[1]], 
+                  master[ master$surveygroup == "PARTIAL" & master$IP_check == "TRUE", test1var[2]])
+test2q = cor.test(master[ master$surveygroup == "PARTIAL" & master$IP_check == "TRUE", test2var[1]], 
+                  master[ master$surveygroup == "PARTIAL" & master$IP_check == "TRUE", test2var[2]])
+
+tableprint_IP = matrix(NA, nrow = 4, ncol = 3)
+colnames(tableprint_IP) = c("Measure", "F-R", "R-S")
+tableprint_IP[1, ] = c("Original Full", apa_print(test1a)$estimate, apa_print(test2a)$estimate)
+tableprint_IP[2, ] = c("Full IP", apa_print(test1p)$estimate, apa_print(test2p)$estimate)
+tableprint_IP[3, ] = c("Original Partial", apa_print(test1b)$estimate, apa_print(test2b)$estimate)
+tableprint_IP[4, ] = c("Partial IP", apa_print(test1q)$estimate, apa_print(test2q)$estimate)
+
+kable(as.data.frame(tableprint_IP)) %>% 
+  kable_styling(bootstrap_options = "striped")
+```
+
+## Meta-Data Checks - Page Clicks
+
+- Page clicks are the number of times that a participants clicks on the page
+- In theory, this represents the number of items they've answered if they are using a mouse
+- Careful with keyboard only users
+- Page clicks should be higher than the number of answered items 
 
 ```{r histogram,  include = F}
 hist(master$Q9_Click.Count, breaks = 100)
 ```
+
+## How to Score 
 
 ```{r clicks, include = F}
 prop.table(table(master$Q9_Click.Count >= items)) * 100
