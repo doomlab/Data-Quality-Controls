@@ -40,7 +40,7 @@ master <- subset(master, Finished == 1)
 
 - OSF: https://osf.io/x53kn/
 - GitHub: https://github.com/doomlab/Data-Quality-Controls
-- Mendeley: 
+- Mendeley: Reading list will be shared on OSF
 - RStudio: 
 
 - Follow us:
@@ -118,7 +118,8 @@ master <- subset(master, Finished == 1)
 ## Real Example!
 
 - Question: What is the relationship between meaning, resiliency, and psychological flexibility?
-- Hypothesis: These should be highly correlated (some positive, some negative).  
+- Hypothesis: These should be highly correlated (some positive, some negative)
+  - Going to explore the effects of different screeners on a high and low correlation
 
 ## Participants
 
@@ -179,7 +180,7 @@ test1b = cor.test(master[ master$surveygroup == "PARTIAL" ,
 test2b = cor.test(master[ master$surveygroup == "PARTIAL" , 
                           test2var[1]], master[ master$surveygroup == "PARTIAL" , test2var[2]])
 
-tableprint =  matrix(NA, nrow = 4, ncol = 3)
+tableprint =  matrix(NA, nrow = 3, ncol = 3)
 tableprint = as.data.frame(tableprint)
 colnames(tableprint) = c("Group", "F-R", "R-S")
 
@@ -308,7 +309,9 @@ master$inconsistent_total <- abs(master$inconsistent1.1 - master$inconsistent1.2
   abs(master$inconsistent5.1 - master$inconsistent5.2) + 
   abs(master$inconsistent6.1 - master$inconsistent6.2) 
 
-prop.table(table(master$inconsistent_total <= 6.5)) * 100
+master$inconsistent_check <- master$inconsistent_total <= 6.5
+
+prop.table(table(master$inconsistent_check)) * 100
 
 hist(master$inconsistent_total)
 ```
@@ -322,7 +325,9 @@ hist(master$inconsistent_total)
 master$infrequent_total <- master$infrequent1 + master$infrequent2 + master$infrequent3 + 
   master$infrequent4 + master$infrequent5 + master$infrequent6
 
-prop.table(table(master$infrequent_total <= 7.5)) * 100
+master$infrequent_check <- master$infrequent_total <= 7.5
+
+prop.table(table(master$infrequent_check)) * 100
 
 hist(master$infrequent_total)
 ```
@@ -331,20 +336,20 @@ hist(master$infrequent_total)
 
 ```{r correl3, results = 'asis'}
 
-test1g = cor.test(master[ master$surveygroup == "FULL" & master$inconsistent_total <= 6.5 , 
-                          test1var[1]], master[ master$surveygroup == "FULL" & master$inconsistent_total <= 6.5 , test1var[2]])
-test2g = cor.test(master[ master$surveygroup == "FULL" & master$inconsistent_total <= 6.5 , 
-                          test2var[1]], master[ master$surveygroup == "FULL" & master$inconsistent_total <= 6.5 , test2var[2]])
+test1g = cor.test(master[ master$surveygroup == "FULL" & master$inconsistent_check == TRUE, test1var[1]], 
+                  master[ master$surveygroup == "FULL" & master$inconsistent_check == TRUE, test1var[2]])
+test2g = cor.test(master[ master$surveygroup == "FULL" & master$inconsistent_check == TRUE, test2var[1]], 
+                  master[ master$surveygroup == "FULL" & master$inconsistent_check == TRUE, test2var[2]])
 
-test1h = cor.test(master[ master$surveygroup == "FULL" & master$infrequent_total <= 7.5 , 
-                          test1var[1]], master[ master$surveygroup == "FULL" & master$infrequent_total <= 7.5 , test1var[2]])
-test2h = cor.test(master[ master$surveygroup == "FULL" & master$infrequent_total <= 7.5 , 
-                          test2var[1]], master[ master$surveygroup == "FULL" & master$infrequent_total <= 7.5 , test2var[2]])
+test1h = cor.test(master[ master$surveygroup == "FULL" & master$infrequent_check == TRUE, test1var[1]], 
+                  master[ master$surveygroup == "FULL" & master$infrequent_check == TRUE, test1var[2]])
+test2h = cor.test(master[ master$surveygroup == "FULL" & master$infrequent_check == TRUE, test2var[1]], 
+                  master[ master$surveygroup == "FULL" & master$infrequent_check == TRUE, test2var[2]])
 
-test1i = cor.test(master[ master$surveygroup == "FULL" & master$infrequent_total <= 7.5 & master$inconsistent_total <= 6.5, 
-                          test1var[1]], master[ master$surveygroup == "FULL" & master$infrequent_total <= 7.5 & master$inconsistent_total <= 6.5, test1var[2]])
-test2i = cor.test(master[ master$surveygroup == "FULL" & master$infrequent_total <= 7.5 & master$inconsistent_total <= 6.5, 
-                          test2var[1]], master[ master$surveygroup == "FULL" & master$infrequent_total <= 7.5 & master$inconsistent_total <= 6.5, test2var[2]])
+test1i = cor.test(master[ master$surveygroup == "FULL" & master$infrequent_check == TRUE & master$inconsistent_check == TRUE, test1var[1]],
+                  master[ master$surveygroup == "FULL" & master$infrequent_check == TRUE & master$inconsistent_check == TRUE, test1var[2]])
+test2i = cor.test(master[ master$surveygroup == "FULL" & master$infrequent_check == TRUE & master$inconsistent_check == TRUE, test2var[1]],
+                  master[ master$surveygroup == "FULL" & master$infrequent_check == TRUE & master$inconsistent_check == TRUE, test2var[2]])
 
 tableprint_im = matrix(NA, nrow = 4, ncol = 3)
 colnames(tableprint_im) = c("Measure", "F-R", "R-S")
@@ -513,7 +518,7 @@ kable(as.data.frame(tableprint_time)) %>%
 
 ## Meta-Data Checks - IPs
 
-- IP Duplications
+- IP Duplication
 - Bad IPs - package `rIP` or use https://ipinfo.info/html/ip_checker.php
 
 ```{r ip_dups, echo = T}
@@ -615,97 +620,263 @@ hist(master$long_pattern)
 ```{r straight2, echo = T}
 master$straight <- master$long_pattern <= (mean(master$long_pattern) + 2*sd(master$long_pattern))
 
-table(master$straight)
+prop.table(table(master$straight))*100
 ```
 
 ## Effect on Statistical Test
 
 ```{r straight_table, results = 'asis'}
 
-test1r = cor.test(master[ master$surveygroup == "FULL" & master$click == "TRUE", test1var[1]], 
-                  master[ master$surveygroup == "FULL" & master$click == "TRUE", test1var[2]])
-test2r = cor.test(master[ master$surveygroup == "FULL" & master$click == "TRUE", test2var[1]], 
-                  master[ master$surveygroup == "FULL" & master$click == "TRUE", test2var[2]])
+test1t = cor.test(master[ master$surveygroup == "FULL" & master$straight == "TRUE", test1var[1]], 
+                  master[ master$surveygroup == "FULL" & master$straight == "TRUE", test1var[2]])
+test2t = cor.test(master[ master$surveygroup == "FULL" & master$straight == "TRUE", test2var[1]], 
+                  master[ master$surveygroup == "FULL" & master$straight == "TRUE", test2var[2]])
 
-test1s = cor.test(master[ master$surveygroup == "PARTIAL" & master$click == "TRUE", test1var[1]], 
-                  master[ master$surveygroup == "PARTIAL" & master$click == "TRUE", test1var[2]])
-test2s = cor.test(master[ master$surveygroup == "PARTIAL" & master$click == "TRUE", test2var[1]], 
-                  master[ master$surveygroup == "PARTIAL" & master$click == "TRUE", test2var[2]])
+test1u = cor.test(master[ master$surveygroup == "PARTIAL" & master$straight == "TRUE", test1var[1]], 
+                  master[ master$surveygroup == "PARTIAL" & master$straight == "TRUE", test1var[2]])
+test2u = cor.test(master[ master$surveygroup == "PARTIAL" & master$straight == "TRUE", test2var[1]], 
+                  master[ master$surveygroup == "PARTIAL" & master$straight == "TRUE", test2var[2]])
 
-tableprint_click = matrix(NA, nrow = 4, ncol = 3)
-colnames(tableprint_click) = c("Measure", "F-R", "R-S")
-tableprint_click[1, ] = c("Original Full", apa_print(test1a)$estimate, apa_print(test2a)$estimate)
-tableprint_click[2, ] = c("Full Click", apa_print(test1r)$estimate, apa_print(test2r)$estimate)
-tableprint_click[3, ] = c("Original Partial", apa_print(test1b)$estimate, apa_print(test2b)$estimate)
-tableprint_click[4, ] = c("Partial Click", apa_print(test1s)$estimate, apa_print(test2s)$estimate)
+tableprint_straight = matrix(NA, nrow = 4, ncol = 3)
+colnames(tableprint_straight) = c("Measure", "F-R", "R-S")
+tableprint_straight[1, ] = c("Original Full", apa_print(test1a)$estimate, apa_print(test2a)$estimate)
+tableprint_straight[2, ] = c("Full Straightlining", apa_print(test1t)$estimate, apa_print(test2t)$estimate)
+tableprint_straight[3, ] = c("Original Partial", apa_print(test1b)$estimate, apa_print(test2b)$estimate)
+tableprint_straight[4, ] = c("Partial Straightlining", apa_print(test1u)$estimate, apa_print(test2u)$estimate)
 
-kable(as.data.frame(tableprint_click)) %>% 
+kable(as.data.frame(tableprint_straight)) %>% 
   kable_styling(bootstrap_options = "striped")
 ```
-
 
 ## Response Patterns - Even Odd Consistency
 
 - Even odd consistency: the correlation between even and odd average items on your scales
 
-```{r}
+```{r even_odd, echo = T, warning = F, message = F}
 master$even_odd <- evenodd(master[ , c(28:39, 45:55, 62:75, 81:90)], 
-                           c(length(28:39), length(45:55), length(62:75), length(81:90)))
+                           c(length(28:39), length(45:55), 
+                             length(62:75), length(81:90)))
 
 hist(master$even_odd)
+```
+
+## How to Score
+
+```{r even_odd2, echo = T}
+master$even_odd_check <- master$even_odd > 0
+
+prop.table(table(master$even_odd_check))*100
+```
+
+## Effect on Statistical Test
+
+```{r even_table, results = 'asis'}
+test1v = cor.test(master[ master$surveygroup == "FULL" & master$even_odd_check == "TRUE", test1var[1]], 
+                  master[ master$surveygroup == "FULL" & master$even_odd_check == "TRUE", test1var[2]])
+test2v = cor.test(master[ master$surveygroup == "FULL" & master$even_odd_check == "TRUE", test2var[1]], 
+                  master[ master$surveygroup == "FULL" & master$even_odd_check == "TRUE", test2var[2]])
+
+test1w = cor.test(master[ master$surveygroup == "PARTIAL" & master$even_odd_check == "TRUE", test1var[1]], 
+                  master[ master$surveygroup == "PARTIAL" & master$even_odd_check == "TRUE", test1var[2]])
+test2w = cor.test(master[ master$surveygroup == "PARTIAL" & master$even_odd_check == "TRUE", test2var[1]], 
+                  master[ master$surveygroup == "PARTIAL" & master$even_odd_check == "TRUE", test2var[2]])
+
+tableprint_even = matrix(NA, nrow = 4, ncol = 3)
+colnames(tableprint_even) = c("Measure", "F-R", "R-S")
+tableprint_even[1, ] = c("Original Full", apa_print(test1a)$estimate, apa_print(test2a)$estimate)
+tableprint_even[2, ] = c("Full Even-Odd", apa_print(test1v)$estimate, apa_print(test2v)$estimate)
+tableprint_even[3, ] = c("Original Partial", apa_print(test1b)$estimate, apa_print(test2b)$estimate)
+tableprint_even[4, ] = c("Partial Even-Odd", apa_print(test1w)$estimate, apa_print(test2w)$estimate)
+
+kable(as.data.frame(tableprint_even)) %>% 
+  kable_styling(bootstrap_options = "striped")
 ```
 
 ## Response Patterns - Inter-Item Response Variability
 
 - Inter-item response variability and distribution/scale usage
+  - Inter-item response variability is the the standard deviation of a participants responses across the scale
+  - Very low would indicate straightlining, very high would indicate random responding
+  - Similar in idea to using the number of scale options as an indicator of potential pattern (or uniform) responding
 
-```{r}
+```{r inter_item, echo = T}
 master$item_response <- irv(master[ , c(28:39, 45:55, 62:75, 81:90)])
 
 hist(master$item_response)
 ```
 
+## How to Score
+
+- Again, the criterion is not obvious or clear, potentially treat like outliers
+
+```{r inter_item2, echo = T}
+master$item_response_check <- master$item_response <= 
+  mean(master$item_response, na.rm = T) + 2*sd(master$item_response, na.rm = T)
+
+prop.table(table(master$item_response_check))*100
+```
+
+## Effect on Statistical Test 
+
+```{r item_table, results = 'asis'}
+
+test1x = cor.test(master[ master$surveygroup == "FULL" & master$item_response_check == "TRUE", test1var[1]], 
+                  master[ master$surveygroup == "FULL" & master$item_response_check == "TRUE", test1var[2]])
+test2x = cor.test(master[ master$surveygroup == "FULL" & master$item_response_check == "TRUE", test2var[1]], 
+                  master[ master$surveygroup == "FULL" & master$item_response_check == "TRUE", test2var[2]])
+
+test1y = cor.test(master[ master$surveygroup == "PARTIAL" & master$item_response_check == "TRUE", test1var[1]], 
+                  master[ master$surveygroup == "PARTIAL" & master$item_response_check == "TRUE", test1var[2]])
+test2y = cor.test(master[ master$surveygroup == "PARTIAL" & master$item_response_check == "TRUE", test2var[1]], 
+                  master[ master$surveygroup == "PARTIAL" & master$item_response_check == "TRUE", test2var[2]])
+
+tableprint_item = matrix(NA, nrow = 4, ncol = 3)
+colnames(tableprint_item) = c("Measure", "F-R", "R-S")
+tableprint_item[1, ] = c("Original Full", apa_print(test1a)$estimate, apa_print(test2a)$estimate)
+tableprint_item[2, ] = c("Full Item", apa_print(test1x)$estimate, apa_print(test2x)$estimate)
+tableprint_item[3, ] = c("Original Partial", apa_print(test1b)$estimate, apa_print(test2b)$estimate)
+tableprint_item[4, ] = c("Partial Item", apa_print(test1y)$estimate, apa_print(test2y)$estimate)
+
+kable(as.data.frame(tableprint_item)) %>% 
+  kable_styling(bootstrap_options = "striped")
+```
+
 ## Response Patterns - Person Total Correlation
 
-- Person total correlation
+- Person total correlation: the correlation between the person's item answers and the average scores of the item answers
+  - Very low scores are considered odd - be careful, as short scales show lots of variability in this measure
 
-```{r}
-# create average score for each item
+```{r person_total, echo = T}
 average_items <- apply(master[ , c(28:39, 45:55, 62:75, 81:90)], 2, mean, na.rm = T)
-# calculate correlation versus average score 
+
 master$correl_items <- apply(master[ , c(28:39, 45:55, 62:75, 81:90)], 1, function(x) { 
   cor(x, average_items, use = "pairwise.complete.obs")})
 
 hist(master$correl_items)
 ```
 
+## How to Score
+
+- Use outlier rules for low scores 
+
+```{r person_total2, echo = T}
+master$correl_items_check <- master$correl_items >= 
+  mean(master$correl_items, na.rm = T) - 2*sd(master$correl_items, na.rm = T)
+
+prop.table(table(master$correl_items_check))*100
+```
+
+## Effect on Statistical Test 
+
+```{r person_table, results = 'asis'}
+
+test1z = cor.test(master[ master$surveygroup == "FULL" & master$correl_items_check == "TRUE", test1var[1]], 
+                  master[ master$surveygroup == "FULL" & master$correl_items_check == "TRUE", test1var[2]])
+test2z = cor.test(master[ master$surveygroup == "FULL" & master$correl_items_check == "TRUE", test2var[1]], 
+                  master[ master$surveygroup == "FULL" & master$correl_items_check == "TRUE", test2var[2]])
+
+test1aa = cor.test(master[ master$surveygroup == "PARTIAL" & master$correl_items_check == "TRUE", test1var[1]], 
+                  master[ master$surveygroup == "PARTIAL" & master$correl_items_check == "TRUE", test1var[2]])
+test2aa = cor.test(master[ master$surveygroup == "PARTIAL" & master$correl_items_check == "TRUE", test2var[1]], 
+                  master[ master$surveygroup == "PARTIAL" & master$correl_items_check == "TRUE", test2var[2]])
+
+tableprint_person = matrix(NA, nrow = 4, ncol = 3)
+colnames(tableprint_person) = c("Measure", "F-R", "R-S")
+tableprint_person[1, ] = c("Original Full", apa_print(test1a)$estimate, apa_print(test2a)$estimate)
+tableprint_person[2, ] = c("Full Person", apa_print(test1z)$estimate, apa_print(test2z)$estimate)
+tableprint_person[3, ] = c("Original Partial", apa_print(test1b)$estimate, apa_print(test2b)$estimate)
+tableprint_person[4, ] = c("Partial Person", apa_print(test1aa)$estimate, apa_print(test2aa)$estimate)
+
+kable(as.data.frame(tableprint_person)) %>% 
+  kable_styling(bootstrap_options = "striped")
+```
+
 ## Response Patterns - Mahalanobis Distance
 
-- Mahalanobis distance
+- Mahalanobis distance: a measure of a participant's scores from the centriod of all the scores 
+  - This method is a more traditional outlier analysis with cut-off scores based on the number of items and a $\chi^2$ distribution
 
-```{r}
+```{r mahal, echo = T}
 master$mahal <- mahalanobis(master[ , c(28:39, 45:55, 62:75, 81:90)], 
                             center = colMeans(master[ , c(28:39, 45:55, 62:75, 81:90)], na.rm = T), 
-                            cov = cov(master[ , c(28:39, 45:55, 62:75, 81:90)], use = "pairwise.complete.obs"))
+                            cov = cov(master[ , c(28:39, 45:55, 62:75, 81:90)], 
+                                      use = "pairwise.complete.obs"))
 alpha <- .001
 cutoff <- (qchisq(p = 1 - alpha, df = ncol(master[ , c(28:39, 45:55, 62:75, 81:90)])))
 
-prop.table(table(master$mahal < cutoff)) * 100
+master$mahal_check <- master$mahal < cutoff
+
+prop.table(table(master$mahal_check)) * 100
 ```
 
-## Response Patteerns - Other Options
+## Effect on Statistical Test 
+
+```{r mahal_table, results = 'asis'}
+
+test1ab = cor.test(master[ master$surveygroup == "FULL" & master$mahal_check == "TRUE", test1var[1]], 
+                  master[ master$surveygroup == "FULL" & master$mahal_check == "TRUE", test1var[2]])
+test2ab = cor.test(master[ master$surveygroup == "FULL" & master$mahal_check == "TRUE", test2var[1]], 
+                  master[ master$surveygroup == "FULL" & master$mahal_check == "TRUE", test2var[2]])
+
+test1ac = cor.test(master[ master$surveygroup == "PARTIAL" & master$mahal_check == "TRUE", test1var[1]], 
+                  master[ master$surveygroup == "PARTIAL" & master$mahal_check == "TRUE", test1var[2]])
+test2ac = cor.test(master[ master$surveygroup == "PARTIAL" & master$mahal_check == "TRUE", test2var[1]], 
+                  master[ master$surveygroup == "PARTIAL" & master$mahal_check == "TRUE", test2var[2]])
+
+tableprint_mahal = matrix(NA, nrow = 4, ncol = 3)
+colnames(tableprint_mahal) = c("Measure", "F-R", "R-S")
+tableprint_mahal[1, ] = c("Original Full", apa_print(test1a)$estimate, apa_print(test2a)$estimate)
+tableprint_mahal[2, ] = c("Full Mahal", apa_print(test1ab)$estimate, apa_print(test2ab)$estimate)
+tableprint_mahal[3, ] = c("Original Partial", apa_print(test1b)$estimate, apa_print(test2b)$estimate)
+tableprint_mahal[4, ] = c("Partial Mahal", apa_print(test1ac)$estimate, apa_print(test2ac)$estimate)
+
+kable(as.data.frame(tableprint_mahal)) %>% 
+  kable_styling(bootstrap_options = "striped")
+```
+
+## Response Patterns - Other Options
 
 - More advanced options:
   - Guttman errors
   - Gendre's functional method
+  - IRT models
+
+## How many?
+
+```{r total_scores, include = T}
+master$serious_TF <- master$seriouscheck == "Seriously"
+variables = c("inconsistent_check", "infrequent_check", "short_words", "RSpage_items", 
+              "IP_check", "click", "straight", "even_odd_check", "item_response_check",
+              "correl_items_check", "mahal_check", "serious_TF")
+
+master$total_checks <- length(variables) - apply(master[ , variables], 1, sum, na.rm = T) 
+master$total_checks <- apply(master[ , c("attention_total", "total_checks")], 1, sum, na.rm = T)
+
+master$final_percent <- NA
+master$final_percent[master$surveygroup == "FULL"] <- master$total_checks[master$surveygroup == "FULL"]/(4+length(variables)) * 100
+
+master$final_percent[master$surveygroup == "PARTIAL"] <- master$total_checks[master$surveygroup == "PARTIAL"]/(length(variables)-2) * 100
+
+hist(master$final_percent)
+```
 
 ## Final Thoughts
 
+- Generally:
+  - In large correlation effects, generally doesn't change the effect much
+  - In small correlation effects, about half don't change, other half decrease 
+  - Other studies show the reduction in noise increases an effect size 
+- Does not appear to be a "reaction" to including visible checks 
 - No one rule is useful, should combine rules
 - Suggestion is to take the overall percent marked as "bad", use a cut-off based on an overall global representation of "low effort" 
+- Pre-register! 
+
+- Coming soon: videos for R, JASP, SPSS describing these with more comments on procedure and thoughts, keep an eye on the OSF page!
 
 ## Want to learn more?
 
 - Twitter is the best!
 - Read reddit ... seriously
 - Working group?
+
+THANK YOU! 
