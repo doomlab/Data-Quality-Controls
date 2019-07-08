@@ -433,13 +433,45 @@ kable(as.data.frame(tableprint_ser)) %>%
 
 - Determine cut-off and see how many people are below it
 
-```{r}
+```{r timing, echo = F}
+hist(master$duration_seconds, breaks = 1000)
+```
 
+## How to Score
+
+- If you use the whole survey time, per word options may be best
+
+```{r total_duration, echo = T}
+words <- 1946
+short_words <- (words * 100) / 1000 #convert to seconds
+long_words <- words * 300 / 1000
+
+prop.table(table(master$duration_seconds >= short_words)) * 100
+
+prop.table(table(master$duration_seconds >= long_words)) * 100
+```
+
+## How to Score
+
+- If you use page time, per item or character options may be best 
+
+```{r page_duration, echo = T}
+items <- 14
+
+prop.table(table(master$Q9_Page.Submit >= items)) * 100
+
+characters <- 1137
+meanchar <- 987
+sdchar <- 118
+upperchar <- meanchar + 2*sdchar
+cutoffChar <- characters / upperchar * 60
+
+prop.table(table(master$Q9_Page.Submit >= cutoffChar)) * 100
 ```
 
 ## Effect on Statistical Test
 
-```{r}
+```{r }
 
 ```
 
@@ -449,13 +481,19 @@ kable(as.data.frame(tableprint_ser)) %>%
 - Bad IPs 
 - Page clicks
 
-```{r}
+```{r ip_dups, include = F}
 ip_table <- as.data.frame(table(master$IP))
 
-prop.table(table(ip_table$Freq > 1)) * 100 
+prop.table(table(ip_table$Freq == 1)) * 100 
 ```
 
+```{r histogram,  include = F}
+hist(master$Q9_Click.Count, breaks = 100)
+```
 
+```{r clicks, include = F}
+prop.table(table(master$Q9_Click.Count >= items)) * 100
+```
 
 ## Response Patterns - Straightlining
 
@@ -487,22 +525,25 @@ hist(master$item_response)
 - Person total correlation
 
 ```{r}
-#create average score for each item
+# create average score for each item
+average_items <- apply(master[ , c(28:39, 45:55, 62:75, 81:90)], 2, mean, na.rm = T)
+# calculate correlation versus average score 
+master$correl_items <- apply(master[ , c(28:39, 45:55, 62:75, 81:90)], 1, function(x) { 
+  cor(x, average_items, use = "pairwise.complete.obs")})
 
-#calculate correlation versus average score 
+hist(master$correl_items)
 ```
 
 - Mahalanobis distance
 
 ```{r}
-##fix this up
-md <- mahalanobis(data, center = colMeans(data_outlier), cov = cov(data_outlier))
-
+master$mahal <- mahalanobis(master[ , c(28:39, 45:55, 62:75, 81:90)], 
+                            center = colMeans(master[ , c(28:39, 45:55, 62:75, 81:90)], na.rm = T), 
+                            cov = cov(master[ , c(28:39, 45:55, 62:75, 81:90)], use = "pairwise.complete.obs"))
 alpha <- .001
+cutoff <- (qchisq(p = 1 - alpha, df = ncol(master[ , c(28:39, 45:55, 62:75, 81:90)])))
 
-cutoff <- (qchisq(p = 1 - alpha, df = ncol(data_outlier)))
-
-table(master$flagged)
+prop.table(table(master$mahal < cutoff)) * 100
 ```
 
 More advanced options:
