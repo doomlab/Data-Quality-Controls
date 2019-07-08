@@ -41,7 +41,7 @@ master <- subset(master, Finished == 1)
 - OSF: https://osf.io/x53kn/
 - GitHub: https://github.com/doomlab/Data-Quality-Controls
 - Mendeley: Reading list will be shared on OSF
-- RStudio: 
+- RStudio: https://rstudio.cloud/project/405564
 
 - Follow us:
   - erin: @aggieerin, Statistics of Doom YouTube
