@@ -520,6 +520,7 @@ kable(as.data.frame(tableprint_time)) %>%
 
 - IP Duplication
 - Bad IPs - package `rIP` or use https://ipinfo.info/html/ip_checker.php
+- https://itaysisso.shinyapps.io/bots
 
 ```{r ip_dups, echo = T}
 ip_table <- as.data.frame(table(master$IP))
